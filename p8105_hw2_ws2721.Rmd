@@ -1,0 +1,156 @@
+---
+title: "p8105_hw2_ws2721"
+author: "WooJin Shin"
+output: github_document
+date: "2024-09-30"
+---
+
+Problem 1
+------------------------------------------------------------
+NYC train
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+nyc = read.csv("./data/NYC_Transit_Subway_Entrance_And_Exit_data.csv", 
+               na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  select(line, station_name, station_latitude, station_longitude, 
+         contains("route"), entry, vending, entrance_type, ada) |> 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
+```
+
+```{r eval = FALSE}
+summary(nyc)
+```
+
+```{r eval = FALSE}
+nrow(nyc)
+```
+
+```{r eval = FALSE}
+ncol(nyc)
+```
+
+First, I imported the data and converted the variable names to snake cases.
+Then, I have selected the variables that I only need and changed the entry variable
+to a logical variable.
+After the data process, there are 19 columns and 1868 rows.
+The data contains 19 variables consists with:
+11 character variables (routes 1-7,line, station name, etc.),6 numerical
+variables (station latitude, longitude, etc.) and 2 logical variables (entry, ada).
+
+```{r}
+nyc2 <- nyc |> 
+  mutate(route8 = as.character(route8), route9 = as.character(route9), 
+         route10 = as.character(route10), route11 = as.character(route11)) |>
+  pivot_longer(cols = route1:route11, names_to = "route", names_prefix = "route",
+               values_to = "sub_line") |> 
+  drop_na("sub_line")
+```
+
+After looking at the questions, to see the distinct stations clearly, I merged the routes to be attached in one station that will make easier for us to isolate the routes.
+Also removed the NA to have only lanes that are attached to the station. This will make the dataset more tidy.
+
+```{r eval = FALSE}
+station = distinct(nyc2, station_name)
+
+nrow(station)
+```
+
+There are 356 distinct stations.
+
+```{r eval = FALSE}
+compliant = distinct(nyc2, station_name, ada) |> 
+  filter(ada == TRUE)
+
+nrow(compliant)
+```
+
+Among 356 distinct stations, 73 are ADA compliant.
+
+```{r eval = FALSE}
+allow_entry = filter(nyc2, vending == "NO")|>
+  summarise(mean(entry == TRUE))
+
+allow_entry
+```
+
+The proportion of station entrances / exits without vending allow entrance is 0.311.
+
+```{r eval = FALSE}
+distinct2 = distinct(nyc2, station_name, ada, sub_line) |> 
+  filter(sub_line == "A")
+
+nrow(distinct2)
+```
+
+57 distinct stations serve A train.
+
+```{r eval = FALSE}
+distinct3 = distinct(nyc2, station_name, ada, sub_line) |> 
+  filter(sub_line == "A", ada == TRUE)
+
+nrow(distinct3)
+```
+
+Out of 57 distinct stations in A train, 16 are ADA compliant.
+
+
+Problem 2
+------------------------------------------------------------
+Mr. Trash Wheel
+
+```{r}
+library(readxl)
+
+mr_trash = read_excel("./data/202309 Trash Wheel Collection Data.xlsx", 
+                   range = "A2:N586", sheet = "Mr. Trash Wheel") |> 
+  janitor::clean_names() |> 
+  mutate(sports_balls = as.integer(round(sports_balls)),
+         year = as.double(year),
+         indicator = "Mr. Trash")
+
+prof_trash <- read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
+                         range = "A2:M108", sheet = "Professor Trash Wheel") |>
+  janitor::clean_names() |> 
+  mutate(indicator = "Prof. Trash")
+
+gwynnda_trash <- read_excel("data/202309 Trash Wheel Collection Data.xlsx", 
+                      range = "A2:L157", sheet = "Gwynnda Trash Wheel") |>
+  janitor::clean_names() |> 
+  mutate(indicator = "Gwynnda")
+
+trash_df = bind_rows(mr_trash, prof_trash, gwynnda_trash)
+```
+
+I have added the indicator variable for all 3 data sets that I am aggregating and changed the type of variable for Mr. Trash wheel because it gives an error saying that you cannot bind the chr and dbl variables together. So I had to change it to dbl before I bind.
+
+The merged data frame consists of the time, the type and amount of trash gathered in the designated time frame among 3 trash collecting robots. The date is divided to month and year as well as the type of trash (plastic bottles, cigarette_butts .etc) and the amount (weight_tons, volume_cubic_yards .etc). The total amounts of home powered are also included in the data frame.The indicator variable separates the robot in the data frame. 
+
+```{r}
+total_prof = trash_df |> 
+  filter(indicator == "Prof. Trash") |> 
+  summarize(total_weight = sum(weight_tons, na.rm = TRUE))
+```
+
+Total collected from Professor Trash Wheel is 216.26 tons.
+
+```{r}
+total_cig_gwynnda = trash_df |> 
+  filter(indicator == "Gwynnda", 
+         month == "June",
+         year == "2022") |> 
+  summarize(total_cig = sum(cigarette_butts, na.rm = TRUE))
+```
+
+Total cigarette butts collected by Gwynnda in June of 2022 is 18120.
+
+
+Problem 3
+------------------------------------------------------------
+Great British Bake Off
+
