@@ -210,8 +210,6 @@ Since all 3 commands with `anti_join` shows "Jo" from series 2 that tells us it 
 By looking at the result data: 
 "Joanne" from the result data looks like it matches with "Jo" in both bakers and bakes data. I will fix this name to Jo before making a data frame.
 
-I'll use dollar sign($) this time to be faster.
-
 ```{r}
 bakes = bakes |> 
   mutate(baker = gsub('"Jo"','Jo', baker))
