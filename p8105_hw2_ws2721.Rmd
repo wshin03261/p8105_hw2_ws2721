@@ -12,6 +12,7 @@ NYC train
 ```{r}
 library(dplyr)
 library(tidyr)
+library(tidyverse)
 ```
 
 ```{r}
@@ -107,20 +108,20 @@ Mr. Trash Wheel
 ```{r}
 library(readxl)
 
-mr_trash = read_excel("./data/202309 Trash Wheel Collection Data.xlsx", 
-                   range = "A2:N586", sheet = "Mr. Trash Wheel") |> 
+mr_trash = read_excel("./data/202409 Trash Wheel Collection Data.xlsx", 
+                   range = "A2:N653", sheet = "Mr. Trash Wheel") |> 
   janitor::clean_names() |> 
   mutate(sports_balls = as.integer(round(sports_balls)),
          year = as.double(year),
          indicator = "Mr. Trash")
 
-prof_trash <- read_excel("./data/202309 Trash Wheel Collection Data.xlsx",
-                         range = "A2:M108", sheet = "Professor Trash Wheel") |>
+prof_trash <- read_excel("./data/202409 Trash Wheel Collection Data.xlsx",
+                         range = "A2:M120", sheet = "Professor Trash Wheel") |>
   janitor::clean_names() |> 
   mutate(indicator = "Prof. Trash")
 
-gwynnda_trash <- read_excel("data/202309 Trash Wheel Collection Data.xlsx", 
-                      range = "A2:L157", sheet = "Gwynnda Trash Wheel") |>
+gwynnda_trash <- read_excel("data/202409 Trash Wheel Collection Data.xlsx", 
+                      range = "A2:L265", sheet = "Gwynnda Trash Wheel") |>
   janitor::clean_names() |> 
   mutate(indicator = "Gwynnda")
 
@@ -137,7 +138,7 @@ total_prof = trash_df |>
   summarize(total_weight = sum(weight_tons, na.rm = TRUE))
 ```
 
-Total collected from Professor Trash Wheel is 216.26 tons.
+Total collected from Professor Trash Wheel is 246.74 tons.
 
 ```{r}
 total_cig_gwynnda = trash_df |> 
@@ -153,4 +154,57 @@ Total cigarette butts collected by Gwynnda in June of 2022 is 18120.
 Problem 3
 ------------------------------------------------------------
 Great British Bake Off
+
+```{r}
+bakers = read.csv("./data/gbb_datasets/bakers.csv", 
+               na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  separate(baker_name, into = c("baker", "last_name"), sep = " ") |> 
+  arrange(series, baker)
+
+bakes = read.csv("./data/gbb_datasets/bakes.csv",
+                 na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  arrange(series, baker)
+
+results = read.csv("./data/gbb_datasets/results.csv", skip = 2,
+                 na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  arrange(series, baker)
+```
+
+1. Looking at the data, we first have to 
+
+```{r}
+anti_join(bakers, bakes)
+```
+
+```{r}
+anti_join(bakes, results)
+```
+
+```{r}
+anti_join(bakers, results)
+```
+
+
+```{r}
+bakers_df <- left_join(results, bakers, by = c("series", "baker")) |>
+  left_join(bakes, by = c("series", "episode", "baker")) |>
+  select(series, episode, baker, result, everything()) |> 
+  filter(if_all(everything(), Negate(is.na)))
+
+write_csv(bakers_df, "./data/gbb_datasets/bakers_df.csv")
+
+stars_or_winner <- bakers_df |>
+  filter(series >= 5 & series <= 10 & 
+           (result == "STAR BAKER" | result == "WINNER"))
+  
+knitr::kable(stars_or_winner, format = "html")
+```
+
+
+```{r}
+
+```
 
