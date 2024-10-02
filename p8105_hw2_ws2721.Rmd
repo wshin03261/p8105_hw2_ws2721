@@ -9,7 +9,7 @@ Problem 1
 ------------------------------------------------------------
 NYC train
 
-```{r}
+```{r echo = FALSE, message = FALSE}
 library(dplyr)
 library(tidyr)
 library(tidyverse)
@@ -142,9 +142,7 @@ Total collected from Professor Trash Wheel is 246.74 tons.
 
 ```{r}
 total_cig_gwynnda = trash_df |> 
-  filter(indicator == "Gwynnda", 
-         month == "June",
-         year == "2022") |> 
+  filter(indicator == "Gwynnda", month == "June", year == "2022") |> 
   summarize(total_cig = sum(cigarette_butts, na.rm = TRUE))
 ```
 
@@ -173,38 +171,105 @@ results = read.csv("./data/gbb_datasets/results.csv", skip = 2,
   arrange(series, baker)
 ```
 
-1. Looking at the data, we first have to 
+Bakers:
+Looking at the data, we first have to separate the baker name to 2 parts, their first name and last name because bakes and results already have their first name.
+Then arrange the table to concentrate on series and baker for future binding.
+
+Bakes: 
+Looking at the data, nothing typical was shown. Arrange the table by their series and baker for future binding.
+
+Results:
+Looking at the data, we have to omit the first 2 rows to clear the data. Then, arrange the table by their series and baker for future binding.
 
 ```{r}
 anti_join(bakers, bakes)
 ```
 
 ```{r}
-anti_join(bakes, results)
-```
-
-```{r}
 anti_join(bakers, results)
 ```
 
+```{r}
+anti_join(bakes, results)
+```
+
+Before merging, we have to check the data. I used `anti_join` to assess the data. It identifies the observations that exist in the first data set but not in the second data set.
+
+Comparing bakers, bakes:
+It joined by baker and series. In series 2, "Jo Wheatley" wasn't in the bakers list and bakers from series 9 and 10 weren't as well.
+
+Comparing bakers, results:
+It joined by baker and series. I again, see the same name "Jo Wheatley" but this time both data set have series 9 and 10.
+
+Comparing bakes, results:
+It joined by baker, series, and episode. Again, I see "Jo" as well.
+
+Since all 3 commands with `anti_join` shows "Jo" from series 2 that tells us it is worth looking into.
+
+By looking at the result data: 
+"Joanne" from the result data looks like it matches with "Jo" in both bakers and bakes data. I will fix this name to Jo before making a data frame.
+
+I'll use dollar sign($) this time to be faster
+
+```{r}
+bakes$baker = gsub('"Jo"', 'Jo', bakes$baker)
+```
+
+```{r}
+results$baker = gsub('Joanne','Jo', results$baker)
+```
+
+I've changed Joanne and "Jo" from series 2 to Jo.
+
+Then we will bind the data set to make it reader friendly.
 
 ```{r}
 bakers_df <- left_join(results, bakers, by = c("series", "baker")) |>
   left_join(bakes, by = c("series", "episode", "baker")) |>
   select(series, episode, baker, result, everything()) |> 
-  filter(if_all(everything(), Negate(is.na)))
+  drop_na()
 
 write_csv(bakers_df, "./data/gbb_datasets/bakers_df.csv")
+```
 
+Merged the data and exported
+
+```{r}
 stars_or_winner <- bakers_df |>
   filter(series >= 5 & series <= 10 & 
            (result == "STAR BAKER" | result == "WINNER"))
-  
-knitr::kable(stars_or_winner, format = "html")
 ```
 
+There are total of 40 titles of "Winner" and "Star Baker" awarded to 20 distinct bakers in between series 5 and 10. I could see that the most of the winners have low technical level that is around 1 to 2. It could be surprising to see the baking that are easy to make are the winning bakes.
+Also, generally people who won the STAR BAKER prior seems like to have a higher chance of winning in the series.
 
 ```{r}
-
+viewers = read.csv("./data/gbb_datasets/viewers.csv", 
+               na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  pivot_longer(cols = series_1:series_10, names_to = "series", 
+               names_prefix = "series_", values_to = "viewer") |>
+  filter(!is.na(viewer)) |>
+    mutate(series = as.double(series)) |>
+  arrange(series, episode)
 ```
 
+Made the data longer that shows the list of episodes, series, and the viewers that are associated with. The series were chr variable so I had to change it to double in order to filter for future average calculation.
+
+```{r}
+head(viewers, n = 10)
+```
+
+```{r}
+mean1 <- viewers |>
+  filter(series == 1) |>
+  summarise(mean = mean(viewer)) |>
+  pull(mean)
+
+mean5 <- viewers |>
+  filter(series == 5) |>
+  summarise(mean = mean(viewer)) |>
+  pull(mean)
+```
+
+The average viewership of season 1 was 2.77 and season 5 was 10.04.
