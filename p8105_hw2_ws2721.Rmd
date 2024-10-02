@@ -53,25 +53,26 @@ nyc2 <- nyc |>
   drop_na("sub_line")
 ```
 
-After looking at the questions, to see the distinct stations clearly, I merged the routes to be attached in one station that will make easier for us to isolate the routes.
+After looking at the questions, to see the distinct stations clearly, I merged the routes to be attached in one station that will make easier for us to isolate the routes
+Route 8 through 11 were converted to characters to match the format with route 1~7.
 Also removed the NA to have only lanes that are attached to the station. This will make the dataset more tidy.
 
 ```{r eval = FALSE}
-station = distinct(nyc2, station_name)
+station = distinct(nyc2, line, station_name)
 
 nrow(station)
 ```
 
-There are 356 distinct stations.
+There are 465 distinct stations identified by both name and line.
 
 ```{r eval = FALSE}
-compliant = distinct(nyc2, station_name, ada) |> 
+compliant = distinct(nyc2, line, station_name, ada) |> 
   filter(ada == TRUE)
 
 nrow(compliant)
 ```
 
-Among 356 distinct stations, 73 are ADA compliant.
+Among 465 distinct stations, 84 are ADA compliant.
 
 ```{r eval = FALSE}
 allow_entry = filter(nyc2, vending == "NO")|>
@@ -209,14 +210,16 @@ Since all 3 commands with `anti_join` shows "Jo" from series 2 that tells us it 
 By looking at the result data: 
 "Joanne" from the result data looks like it matches with "Jo" in both bakers and bakes data. I will fix this name to Jo before making a data frame.
 
-I'll use dollar sign($) this time to be faster
+I'll use dollar sign($) this time to be faster.
 
 ```{r}
-bakes$baker = gsub('"Jo"', 'Jo', bakes$baker)
+bakes = bakes |> 
+  mutate(baker = gsub('"Jo"','Jo', baker))
 ```
 
 ```{r}
-results$baker = gsub('Joanne','Jo', results$baker)
+results = results |> 
+  mutate(baker = gsub('Joanne','Jo', baker))
 ```
 
 I've changed Joanne and "Jo" from series 2 to Jo.
@@ -240,7 +243,7 @@ stars_or_winner <- bakers_df |>
            (result == "STAR BAKER" | result == "WINNER"))
 ```
 
-There are total of 40 titles of "Winner" and "Star Baker" awarded to 20 distinct bakers in between series 5 and 10. I could see that the most of the winners have low technical level that is around 1 to 2. It could be surprising to see the baking that are easy to make are the winning bakes.
+There are total of 40 titles of "Winner" and "Star Baker" awarded to 20 distinct bakers in between series 5 and 10. I could see that the most of the winners have technical level that is around 1 to 2 of the winning bake.
 Also, generally people who won the STAR BAKER prior seems like to have a higher chance of winning in the series.
 
 ```{r}
@@ -254,7 +257,7 @@ viewers = read.csv("./data/gbb_datasets/viewers.csv",
   arrange(series, episode)
 ```
 
-Made the data longer that shows the list of episodes, series, and the viewers that are associated with. The series were chr variable so I had to change it to double in order to filter for future average calculation.
+Made the data longer that shows the list of episodes, series, and the viewers that are associated with. The series were chraracter variable so I had to change it to double in order to filter for future average calculation.
 
 ```{r}
 head(viewers, n = 10)
